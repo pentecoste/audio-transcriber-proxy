@@ -3,9 +3,12 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 from collections import deque
 import math
-import whisper
+from faster_whisper import WhisperModel
+import os
 
-model = whisper.load_model("medium")
+model_size = "large-v3"
+
+model = WhisperModel(model_size, device="cuda", compute_type="int8")
 executor = ThreadPoolExecutor(max_workers=40)
 mutex = Lock()
 
@@ -46,9 +49,12 @@ def handle_request(conn, addr):
     with mutex:
         with open("to_transcribe.opus", "wb") as f_out:
             f_out.write(bytes(data_buffer))
-        result = model.transcribe("to_transcribe.opus", language="it")
+        segments, info = model.transcribe("to_transcribe.opus", beam_size=5)
+        result = ""
+        for segment in segments:
+            result += "[{tstart:.2f} -> {tend:.2f}] {content}\n".format(tstart=segment.start, tend=segment.end, content=segment.text)
         try:
-            conn.send(bytes(result["text"].encode('utf-8')))
+            conn.send(bytes(result.encode('utf-8')))
         except:
             conn.close()
             return
