@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+service AudioTranscriptionService {
+    rpc process_audio (AudioRequest) returns (TextResponse);
+    rpc stop_transcriber (google.protobuf.Empty) returns (google.protobuf.Empty);
+    rpc start_transcriber (google.protobuf.Empty) returns (google.protobuf.Empty);
+}
+
+message AudioRequest {
+    string base64_data = 1;
+}
+
+message TextResponse {
+    string value = 1;
+}
+
